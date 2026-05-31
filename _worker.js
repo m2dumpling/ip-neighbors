@@ -1,9 +1,9 @@
 /**
  * IP 邻居 — Meituan API CORS 代理
- * 用法：
- *   /?url=<encoded_url>    代理任意美团 API
- *   /?ip=54.70.174.10      快捷 IP 定位
- *   /?lat=23.1&lng=113.3   快捷逆地理编码
+ * 端点:
+ *   /?ip=1.2.3.4              单个 IP 定位
+ *   /?lat=23.1&lng=113.3       逆地理编码
+ *   /?batch=1.2.3.4,1.2.3.5    批量 IP 定位（逗号分隔，建议≤50）
  */
 addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event.request));
@@ -14,57 +14,75 @@ async function handleRequest(request) {
 
   if (request.method === "OPTIONS") {
     return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Max-Age": "86400",
-      },
+      headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, OPTIONS", "Access-Control-Max-Age": "86400" },
     });
   }
 
-  let target;
+  // ── 批量 IP 定位 ──
+  const batch = url.searchParams.get("batch");
+  if (batch) {
+    const ips = batch.split(",").map(s => s.trim()).filter(Boolean);
+    if (ips.length > 60) {
+      return json({ error: "最多 60 个 IP" }, 400);
+    }
+    const results = await Promise.all(
+      ips.map(async (ip) => {
+        try {
+          const resp = await fetch(`https://apimobile.meituan.com/locate/v2/ip/loc?rgeo=true&ip=${ip}`, {
+            headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" },
+          });
+          const data = await resp.json();
+          return { ip, data };
+        } catch (e) {
+          return { ip, error: e.message };
+        }
+      })
+    );
+    return new Response(JSON.stringify(results), {
+      headers: cors({ "Content-Type": "application/json" }),
+    });
+  }
 
-  // 快捷方式：/ ？ip=1.2.3.4
+  // ── 单个 IP 定位 ──
   const ip = url.searchParams.get("ip");
   if (ip) {
-    target = `https://apimobile.meituan.com/locate/v2/ip/loc?rgeo=true&ip=${ip}`;
+    return proxy(`https://apimobile.meituan.com/locate/v2/ip/loc?rgeo=true&ip=${ip}`);
   }
 
-  // 快捷方式：/ ？lat=23.1&lng=113.3
+  // ── 逆地理编码 ──
   const lat = url.searchParams.get("lat");
   const lng = url.searchParams.get("lng");
-  if (!target && lat && lng) {
-    target = `https://apimobile.meituan.com/group/v1/city/latlng/${lat},${lng}?tag=0`;
+  if (lat && lng) {
+    return proxy(`https://apimobile.meituan.com/group/v1/city/latlng/${lat},${lng}?tag=0`);
   }
 
-  // 通用代理：/ ？url=<encoded_url>
-  if (!target) {
-    const raw = url.searchParams.get("url");
-    if (!raw) {
-      return respond({ error: "缺少参数：ip / lat+lng / url" }, 400);
-    }
-    target = raw;
-  }
+  // ── 通用代理 ──
+  const raw = url.searchParams.get("url");
+  if (raw) return proxy(raw);
 
+  return json({ error: "参数: ip / lat+lng / batch" }, 400);
+}
+
+async function proxy(target) {
   try {
     const resp = await fetch(target, {
       headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" },
     });
-    const body = await resp.text();
-    return new Response(body, {
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Access-Control-Allow-Origin": "*",
-      },
+    return new Response(await resp.text(), {
+      headers: cors({ "Content-Type": "application/json; charset=utf-8" }),
     });
   } catch (e) {
-    return respond({ error: e.message }, 502);
+    return json({ error: e.message }, 502);
   }
 }
 
-function respond(data, status) {
+function cors(extra) {
+  return { ...extra, "Access-Control-Allow-Origin": "*" };
+}
+
+function json(data, status) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    headers: cors({ "Content-Type": "application/json" }),
   });
 }

@@ -132,6 +132,8 @@ nav{
 /* ── Leaflet ── */
 .leaflet-popup-content-wrapper{border-radius:14px!important;box-shadow:0 4px 24px rgba(0,0,0,0.08)!important;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif!important}
 .leaflet-popup-content{margin:12px 16px!important;font-size:13px!important;line-height:1.5!important}
+.leaflet-interactive{cursor:pointer!important;transition:fill-opacity 0.15s,stroke-width 0.15s}
+.leaflet-interactive:hover{stroke-width:3!important}
 .popup-ip{font-weight:600;font-size:15px;margin-bottom:4px}
 .popup-loc{color:#1d1d1f;font-size:14px;margin-bottom:2px}
 .popup-detail{color:#0071e3;font-size:13px;margin-top:4px;padding-top:4px;border-top:1px solid rgba(0,0,0,0.06)}
@@ -426,6 +428,8 @@ async function startScan() {
   }
 
   S.prefix = prefix;
+  S.lastOctet = +D.input.value.trim().split(".").pop();
+  if (isNaN(S.lastOctet) || S.lastOctet < 0 || S.lastOctet > 255) S.lastOctet = -1;
   S.ips = Array.from({ length: 256 }, (_, i) => `${prefix}.${i}`);
   S.results = new Array(256).fill(null);
   S.foundCount = 0;
@@ -470,8 +474,15 @@ async function startScan() {
   D.found.textContent = S.foundCount;
 
   await renderMap();
-  const first = S.results.findIndex(r => r);
-  if (first >= 0) await renderAddress(first);
+  const { lastOctet } = S;
+  const showIdx = (lastOctet >= 0 && S.results[lastOctet]) ? lastOctet : S.results.findIndex(r => r);
+  if (showIdx >= 0) {
+    await renderAddress(showIdx);
+    const sd = S.results[showIdx];
+    if (sd && sd.lat != null && sd.lng != null) {
+      mapInst.setView([+sd.lat, +sd.lng], 12, { animate: false });
+    }
+  }
   D.addrSec.classList.add("show");
   D.mapSec.classList.add("show");
   setTimeout(() => mapInst?.invalidateSize(), 250);
@@ -565,7 +576,7 @@ async function renderAddress(idx) {
 async function renderMap() {
   if (!mapInst) {
     mapInst = L.map("map", {
-      center: [35, 105], zoom: 4, zoomControl: true, attributionControl: false,
+      center: [36, 104], zoom: 5, zoomControl: true, attributionControl: false,
     });
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
@@ -585,7 +596,8 @@ async function renderMap() {
     const lat = +d.lat, lng = +d.lng;
 
     const m = L.circleMarker([lat, lng], {
-      radius: 7, color: "#0071e3", fillColor: "#0071e3", fillOpacity: 0.7, weight: 1.5,
+      radius: 11, color: "#0071e3", fillColor: "#0071e3", fillOpacity: 0.8, weight: 2,
+      bubblingMouseEvents: true,
     }).addTo(mapInst);
 
     // 初始 popup 显示基本信息

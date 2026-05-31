@@ -270,18 +270,39 @@ let mapInst = null, markers = [];
 //  Visitor IP
 // ═════════════════════════════════════════════════════
 (async function detectVisitor() {
-  try {
-    const r = await fetch("https://ipinfo.io/json", { signal: AbortSignal.timeout(6000) });
-    const d = await r.json();
-    if (d.ip) {
-      S.visitorIP = d.ip;
-      S.visitorV4 = /^\d+\.\d+\.\d+\.\d+$/.test(d.ip);
-      D.visitorIp.textContent = d.ip;
-      D.visitorLoc.textContent = S.visitorV4
-        ? [d.city, d.region, d.country].filter(Boolean).join(" · ")
-        : "当前为 IPv6，仅支持 IPv4 C 段扫描";
-    } else { D.visitorIp.textContent = "未检测到"; }
-  } catch { D.visitorIp.textContent = "检测失败"; }
+  // 用 AbortController + setTimeout 替代 AbortSignal.timeout（兼容更多浏览器）
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+
+  // 尝试多个 IP 检测服务
+  const urls = [
+    "https://ipinfo.io/json",
+    "https://api.ipify.org?format=json",
+  ];
+
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { signal: ctrl.signal });
+      if (!r.ok) continue;
+      const d = await r.json();
+      const ip = d.ip || d.ipString;
+      if (ip) {
+        clearTimeout(timer);
+        S.visitorIP = ip;
+        S.visitorV4 = /^\d+\.\d+\.\d+\.\d+$/.test(ip);
+        D.visitorIp.textContent = ip;
+        D.visitorLoc.textContent = S.visitorV4
+          ? [d.city, d.region, d.country].filter(Boolean).join(" · ") || "IPv4"
+          : "仅支持 IPv4 C 段扫描";
+        D.modal.classList.add("show");
+        return;
+      }
+    } catch { continue; }
+  }
+
+  clearTimeout(timer);
+  D.visitorIp.textContent = "检测失败";
+  D.visitorLoc.textContent = "可手动输入 IPv4 地址";
   D.modal.classList.add("show");
 })();
 

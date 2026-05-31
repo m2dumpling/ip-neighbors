@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>IP 邻居 — C段网络地址扫描器</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  background:#f5f5f7;
+  color:#1d1d1f;
+  font-family:'SF Pro Display','SF Pro Text',-apple-system,BlinkMacSystemFont,'Helvetica Neue','Helvetica',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow-x:hidden;
+}
+
+::selection{background:rgba(0,113,227,0.15);color:#1d1d1f}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:2px}
+
+/* ===== Nav ===== */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  height:48px;
+  background:rgba(255,255,255,0.72);
+  backdrop-filter:blur(40px) saturate(1.5);
+  -webkit-backdrop-filter:blur(40px) saturate(1.5);
+  border-bottom:1px solid rgba(0,0,0,0.04);
+  display:flex;align-items:center;
+  padding:0 24px;
+}
+.nav-inner{
+  max-width:1024px;width:100%;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.nav-brand{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;font-weight:600;letter-spacing:0.2px;
+  color:#1d1d1f;
+}
+.nav-brand svg{width:15px;height:15px;opacity:0.5}
+.nav-status{
+  font-size:12px;font-weight:500;
+  color:#86868b;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ===== Hero ===== */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:100px 24px 60px;
+  background:linear-gradient(180deg,#f5f5f7 0%,#fff 40%);
+}
+.hero-inner{
+  display:flex;flex-direction:column;align-items:center;
+  max-width:600px;width:100%;
+}
+.hero-label{
+  font-size:12px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:#86868b;
+  margin-bottom:20px;
+}
+.hero-title{
+  font-size:clamp(48px,10vw,96px);
+  font-weight:700;letter-spacing:-0.04em;
+  line-height:0.95;text-align:center;
+  margin-bottom:16px;
+  color:#1d1d1f;
+}
+.hero-title .thin{font-weight:400;color:#86868b}
+.hero-sub{
+  font-size:clamp(16px,1.6vw,20px);
+  color:#86868b;text-align:center;line-height:1.6;
+  max-width:440px;margin-bottom:40px;
+  font-weight:400;
+}
+
+/* ===== Scan Card ===== */
+.scan-card{
+  width:100%;padding:24px;
+  background:#fff;
+  border-radius:20px;
+  box-shadow:0 2px 20px rgba(0,0,0,0.04),0 1px 3px rgba(0,0,0,0.02);
+  border:1px solid rgba(0,0,0,0.04);
+}
+.input-group{display:flex;gap:8px;width:100%}
+.input-group input{
+  flex:1;height:48px;padding:0 18px;
+  background:#f5f5f7;
+  border:1px solid transparent;
+  border-radius:12px;
+  color:#1d1d1f;font-size:14px;font-family:inherit;
+  outline:none;transition:border-color 0.2s,background 0.2s;
+}
+.input-group input::placeholder{color:#aeaeb2}
+.input-group input:focus{
+  border-color:#0071e3;
+  background:#fff;
+}
+.input-group button{
+  height:48px;padding:0 24px;
+  background:#0071e3;color:#fff;
+  border:none;border-radius:12px;
+  font-size:14px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:opacity 0.2s,transform 0.15s;
+  display:flex;align-items:center;gap:6px;
+  white-space:nowrap;
+}
+.input-group button:hover{opacity:0.85}
+.input-group button:active{transform:scale(0.97)}
+.input-group button:disabled{opacity:0.3;cursor:not-allowed;transform:none}
+.input-group button.scanning svg{animation:spin 1s linear infinite}
+
+/* ===== Proxy Badge ===== */
+.proxy-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  margin-top:10px;padding:4px 10px;
+  font-size:11px;color:#86868b;
+}
+.proxy-badge .dot{width:5px;height:5px;border-radius:50%;background:#30d158;display:inline-block}
+
+/* ===== Progress ===== */
+.progress-area{display:none;width:100%;margin-top:16px}
+.progress-area.show{display:block}
+.progress-bar-track{
+  width:100%;height:2px;
+  background:rgba(0,0,0,0.05);border-radius:2px;overflow:hidden;
+}
+.progress-bar-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,#0071e3,#40b4ff);
+  border-radius:2px;transition:width 0.3s ease;
+}
+.progress-text{
+  display:flex;justify-content:space-between;
+  font-size:11px;color:#aeaeb2;margin-top:6px;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ===== Detail Address ===== */
+.address-section{
+  display:none;
+  max-width:960px;margin:0 auto;padding:0 24px 40px;
+}
+.address-section.show{display:block}
+.address-card{
+  background:#fff;
+  border-radius:20px;
+  box-shadow:0 2px 20px rgba(0,0,0,0.04);
+  border:1px solid rgba(0,0,0,0.04);
+  padding:28px 32px;
+  display:grid;grid-template-columns:1fr auto;
+  gap:16px;align-items:start;
+}
+.address-meta{font-size:12px;color:#aeaeb2;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px}
+.address-ip{font-size:28px;font-weight:700;letter-spacing:-0.03em;color:#1d1d1f;margin-bottom:4px}
+.address-detail{font-size:16px;color:#86868b;line-height:1.5}
+.address-detail strong{color:#1d1d1f;font-weight:500}
+.address-coord{font-size:12px;color:#aeaeb2;font-family:'SF Mono','Menlo','Consolas',monospace;margin-top:8px}
+.address-stats{
+  display:flex;gap:20px;align-items:center;
+  padding:12px 20px;background:#f5f5f7;border-radius:12px;
+  white-space:nowrap;
+}
+.address-stats-item{text-align:center}
+.address-stats-item .num{
+  font-size:22px;font-weight:700;letter-spacing:-0.02em;
+  color:#1d1d1f;
+}
+.address-stats-item .label{font-size:11px;color:#86868b;margin-top:2px}
+
+/* ===== Map ===== */
+.map-section{
+  display:none;
+  max-width:960px;margin:0 auto;padding:0 24px 40px;
+}
+.map-section.show{display:block}
+.map-container{
+  width:100%;height:500px;
+  border-radius:20px;overflow:hidden;
+  box-shadow:0 2px 20px rgba(0,0,0,0.04);
+  border:1px solid rgba(0,0,0,0.04);
+}
+#map{width:100%;height:100%}
+
+/* Leaflet overrides */
+.leaflet-popup-content-wrapper{
+  border-radius:14px!important;
+  box-shadow:0 4px 24px rgba(0,0,0,0.08)!important;
+  font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif!important;
+}
+.leaflet-popup-content{
+  margin:12px 16px!important;font-size:13px!important;line-height:1.5!important;
+}
+.leaflet-popup-content .popup-ip{
+  font-weight:600;font-size:15px;margin-bottom:2px;
+}
+.leaflet-popup-content .popup-loc{
+  color:#86868b;font-size:12px;
+}
+.leaflet-popup-content .popup-detail{
+  color:#1d1d1f;font-size:13px;margin-top:4px;padding-top:4px;
+  border-top:1px solid rgba(0,0,0,0.06);
+}
+
+/* ===== Grid ===== */
+.grid-section{
+  display:none;
+  max-width:600px;margin:0 auto;padding:0 24px 80px;
+}
+.grid-section.show{display:block}
+.grid-header{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:16px;
+}
+.grid-header h2{font-size:16px;font-weight:600}
+.grid-header span{font-size:12px;color:#aeaeb2}
+
+.grid-legend{
+  display:flex;gap:12px;margin-bottom:12px;
+}
+.grid-legend-item{
+  display:flex;align-items:center;gap:5px;
+  font-size:10px;color:#86868b;
+}
+.grid-legend-dot{
+  width:8px;height:8px;border-radius:2px;
+}
+.grid-legend-dot.empty{background:#f0f0f2}
+.grid-legend-dot.found{background:#0071e3}
+.grid-legend-dot.error{background:#f0f0f2}
+
+.ip-grid-wrapper{
+  background:#fff;
+  border-radius:16px;padding:12px;
+  box-shadow:0 2px 20px rgba(0,0,0,0.04);
+  border:1px solid rgba(0,0,0,0.04);
+}
+.ip-grid{
+  display:grid;
+  grid-template-columns:repeat(16,1fr);
+  gap:3px;
+}
+.ip-cell{
+  aspect-ratio:1;
+  display:flex;align-items:center;justify-content:center;
+  background:#f5f5f7;
+  border-radius:3px;
+  font-size:8px;font-weight:500;
+  color:#aeaeb2;
+  font-family:'SF Mono','Menlo','Consolas',monospace;
+  cursor:pointer;user-select:none;
+  transition:background 0.2s,color 0.2s,transform 0.15s;
+}
+.ip-cell:hover{background:#e8e8ed;transform:scale(1.12);z-index:2}
+.ip-cell.found{background:#0071e3;color:#fff}
+.ip-cell.error{background:#f5f5f7;color:#d1d1d6}
+
+/* ===== Animations ===== */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.address-card,.map-container,.ip-grid-wrapper{animation:fadeUp 0.5s ease-out}
+
+/* ===== Responsive ===== */
+@media(max-width:768px){
+  .hero{padding:80px 20px 40px}
+  .hero-title{font-size:clamp(36px,12vw,56px)}
+  .scan-card{padding:16px;border-radius:16px}
+  .address-card{padding:20px;grid-template-columns:1fr}
+  .address-stats{padding:10px 16px;justify-content:center}
+  .address-stats-item .num{font-size:18px}
+  .map-container{height:350px;border-radius:16px}
+  .ip-grid{gap:2px}
+  .ip-cell{font-size:7px;border-radius:2px}
+  .grid-section{padding:0 16px 60px}
+}
+@media(max-width:480px){
+  .input-group{flex-direction:column}
+  .address-ip{font-size:22px}
+  .map-container{height:280px}
+  .ip-cell{font-size:6px}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Nav ===== -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+        <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+        <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+      </svg>
+      <span>IP 邻居</span>
+    </div>
+    <div class="nav-status" id="navStatus">等待扫描</div>
+  </div>
+</nav>
+
+<!-- ===== Hero ===== -->
+<section class="hero" id="hero">
+  <div class="hero-inner">
+    <div class="hero-label">C 段网络地址扫描</div>
+    <h1 class="hero-title">IP <span class="thin">邻居</span></h1>
+    <p class="hero-sub">输入任意 IP 地址，扫描全部 256 个邻居节点，在地图上可视化呈现</p>
+
+    <div class="scan-card">
+      <div class="input-group">
+        <input type="text" id="ipInput" placeholder="输入 IP，如 54.70.174.10" spellcheck="false" autocomplete="off">
+        <button id="scanBtn" onclick="startScan()">
+          <span id="scanBtnText">扫描</span>
+          <svg id="scanBtnIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:none">
+            <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+            <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="proxy-badge"><span class="dot"></span> CORS 代理已启用</div>
+      <div class="progress-area" id="progressArea">
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+        <div class="progress-text">
+          <span>已扫描 <span id="scannedCount">0</span>/256</span>
+          <span>发现 <span id="foundCount">0</span> 个邻居</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Address Detail ===== -->
+<section class="address-section" id="addressSection">
+  <div id="addressBody"></div>
+</section>
+
+<!-- ===== Map ===== -->
+<section class="map-section" id="mapSection">
+  <div class="map-container">
+    <div id="map"></div>
+  </div>
+</section>
+
+<!-- ===== Grid ===== -->
+<section class="grid-section" id="gridSection">
+  <div class="grid-header">
+    <h2>邻域网格</h2>
+    <span id="gridCount">256 个地址</span>
+  </div>
+  <div class="grid-legend">
+    <div class="grid-legend-item"><div class="grid-legend-dot empty"></div>未响应</div>
+    <div class="grid-legend-item"><div class="grid-legend-dot found"></div>在线</div>
+  </div>
+  <div class="ip-grid-wrapper">
+    <div class="ip-grid" id="ipGrid"></div>
+  </div>
+</section>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
+<script>
+// ==================== STATE ====================
+const state = {
+  prefix: '', ips: [],
+  results: new Array(256).fill(null),
+  cellStatus: new Array(256).fill('empty'),
+  scanning: false, foundCount: 0,
+  sameCityMap: {},
+};
+const CONCURRENCY = 20;
+const TIMEOUT_MS = 4000;
+const PROXY = 'https://corsproxy.io/?';
+const LEAFLET_LOADED = typeof L !== 'undefined';
+
+// ==================== DOM REFS ====================
+const dom = {
+  grid: document.getElementById('ipGrid'),
+  input: document.getElementById('ipInput'),
+  scanBtn: document.getElementById('scanBtn'),
+  scanBtnText: document.getElementById('scanBtnText'),
+  scanBtnIcon: document.getElementById('scanBtnIcon'),
+  progressArea: document.getElementById('progressArea'),
+  progressFill: document.getElementById('progressFill'),
+  scannedCount: document.getElementById('scannedCount'),
+  foundCount: document.getElementById('foundCount'),
+  navStatus: document.getElementById('navStatus'),
+  gridCount: document.getElementById('gridCount'),
+  addressSection: document.getElementById('addressSection'),
+  addressBody: document.getElementById('addressBody'),
+  mapSection: document.getElementById('mapSection'),
+  gridSection: document.getElementById('gridSection'),
+};
+
+let mapInstance = null;
+let mapMarkers = [];
+let detailedAddresses = {};
+
+// ==================== INIT ====================
+function init() {
+  renderEmptyGrid();
+  dom.input.addEventListener('keydown', e => { if (e.key === 'Enter') startScan(); });
+  dom.input.focus();
+}
+
+// ==================== GRID ====================
+function renderEmptyGrid() {
+  dom.grid.innerHTML = '';
+  for (let i = 0; i < 256; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'ip-cell';
+    cell.dataset.index = i;
+    cell.textContent = i;
+    cell.addEventListener('click', () => focusMapToIP(i));
+    dom.grid.appendChild(cell);
+  }
+}
+
+function getCell(index) { return dom.grid.children[index]; }
+
+function updateCell(index, status, data) {
+  const cell = getCell(index);
+  if (!cell) return;
+  cell.classList.remove('found', 'error');
+  if (status === 'found') cell.classList.add('found');
+  else if (status === 'error') cell.classList.add('error');
+  state.cellStatus[index] = status;
+}
+
+function resetGrid() {
+  for (let i = 0; i < 256; i++) {
+    state.results[i] = null;
+    updateCell(i, 'empty');
+  }
+  state.foundCount = 0;
+  state.sameCityMap = {};
+}
+
+// ==================== SCAN ====================
+function parsePrefix(ip) {
+  const parts = ip.trim().split('.');
+  if (parts.length !== 4) return null;
+  if (parts.slice(0,3).some(p => isNaN(+p) || +p < 0 || +p > 255)) return null;
+  const last = +parts[3];
+  if (isNaN(last) || last < 0 || last > 255) return null;
+  return parts.slice(0,3).join('.');
+}
+
+async function startScan() {
+  if (state.scanning) return;
+  const raw = dom.input.value.trim();
+  const prefix = parsePrefix(raw);
+  if (!prefix) {
+    dom.input.style.borderColor = '#ff3b30';
+    setTimeout(() => dom.input.style.borderColor = '', 1500);
+    return;
+  }
+  dom.input.style.borderColor = '';
+
+  state.prefix = prefix;
+  state.scanning = true;
+  state.ips = Array.from({length: 256}, (_, i) => `${prefix}.${i}`);
+
+  dom.scanBtnText.textContent = '扫描中';
+  dom.scanBtnIcon.style.display = 'block';
+  dom.scanBtn.classList.add('scanning');
+  dom.scanBtn.disabled = true;
+  dom.progressArea.classList.add('show');
+  dom.navStatus.textContent = `扫描 ${prefix}.0/24`;
+
+  resetGrid();
+  dom.addressSection.classList.remove('show');
+  dom.mapSection.classList.remove('show');
+  dom.gridSection.classList.add('show');
+  clearMapMarkers();
+
+  await scanAll();
+
+  state.scanning = false;
+  dom.scanBtnText.textContent = '重新扫描';
+  dom.scanBtnIcon.style.display = 'none';
+  dom.scanBtn.classList.remove('scanning');
+  dom.scanBtn.disabled = false;
+  dom.navStatus.textContent = `扫描完成 · ${state.foundCount} 个邻居在线`;
+
+  if (state.foundCount > 0) {
+    plotMapMarkers();
+    showAddressForPrefix();
+    dom.addressSection.classList.add('show');
+    dom.mapSection.classList.add('show');
+    setTimeout(() => {
+      if (mapInstance) mapInstance.invalidateSize();
+    }, 300);
+  }
+}
+
+async function scanAll() {
+  let index = 0, activeFound = 0;
+  async function worker() {
+    while (index < 256) {
+      const i = index++;
+      const ip = state.ips[i];
+      updateCell(i, 'found', null);
+      updateStats(i, activeFound);
+      const result = await scanSingle(ip);
+      if (result && result.data) {
+        state.results[i] = result;
+        updateCell(i, 'found', result);
+        activeFound++;
+        state.foundCount = activeFound;
+        const city = result.data.rgeo?.city || result.data.rgeo?.province || '';
+        if (city) {
+          if (!state.sameCityMap[city]) state.sameCityMap[city] = [];
+          state.sameCityMap[city].push(i);
+        }
+      } else {
+        updateCell(i, 'error');
+      }
+      updateStats(i + 1, activeFound);
+    }
+  }
+  const workers = Array.from({length: CONCURRENCY}, () => worker());
+  await Promise.all(workers);
+}
+
+async function scanSingle(ip) {
+  const url = PROXY + encodeURIComponent(`https://apimobile.meituan.com/locate/v2/ip/loc?rgeo=true&ip=${ip}`);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { signal: controller.signal, headers: { 'Accept': 'application/json' } });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { return null; }
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
+async function fetchDetailAddress(lat, lng) {
+  const key = `${lat},${lng}`;
+  if (detailedAddresses[key]) return detailedAddresses[key];
+  const url = PROXY + encodeURIComponent(`https://apimobile.meituan.com/group/v1/city/latlng/${lat},${lng}?tag=0`);
+  try {
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const text = await res.text();
+    const data = JSON.parse(text);
+    if (data && data.data) {
+      detailedAddresses[key] = data.data;
+      return data.data;
+    }
+  } catch {}
+  return null;
+}
+
+// ==================== STATS ====================
+function updateStats(scanned, found) {
+  const pct = Math.min(100, Math.round((scanned / 256) * 100));
+  dom.progressFill.style.width = pct + '%';
+  dom.scannedCount.textContent = Math.min(scanned, 256);
+  dom.foundCount.textContent = found;
+  dom.gridCount.textContent = `256 个地址 · ${found} 个在线`;
+  dom.navStatus.textContent = state.scanning
+    ? `扫描 ${state.prefix}.0/24 · ${found} 个邻居`
+    : `扫描完成 · ${found} 个邻居在线`;
+}
+
+// ==================== ADDRESS ====================
+async function showAddressForPrefix() {
+  // Show first found IP's detail
+  for (let i = 0; i < 256; i++) {
+    if (state.results[i]?.data) {
+      await showAddressDetail(i);
+      break;
+    }
+  }
+}
+
+async function showAddressDetail(index) {
+  const result = state.results[index];
+  if (!result?.data) return;
+  const d = result.data;
+  const rgeo = d.rgeo || {};
+  const ip = state.ips[index];
+
+  // Fetch detailed address from API #2
+  let detail = null;
+  if (d.lat != null && d.lng != null) {
+    detail = await fetchDetailAddress(d.lat, d.lng);
+  }
+
+  dom.addressBody.innerHTML = `
+    <div class="address-card">
+      <div>
+        <div class="address-meta">当前位置 · ${rgeo.country || ''}</div>
+        <div class="address-ip">${ip}</div>
+        <div class="address-detail">
+          ${rgeo.country || ''} ${rgeo.province || ''} ${rgeo.city || ''} ${rgeo.district || ''}
+          ${detail && detail.detail ? `<br><strong>${detail.detail}</strong>` : ''}
+          ${detail && detail.areaName ? `<span style="color:#86868b"> · ${detail.areaName}</span>` : ''}
+        </div>
+        <div class="address-coord">${d.lat != null ? d.lat : ''}${d.lng != null ? `, ${d.lng}` : ''}</div>
+      </div>
+      <div class="address-stats">
+        <div class="address-stats-item">
+          <div class="num">${state.foundCount}</div>
+          <div class="label">邻居节点</div>
+        </div>
+        <div class="address-stats-item">
+          <div class="num">${Object.keys(state.sameCityMap).length}</div>
+          <div class="label">覆盖城市</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ==================== MAP ====================
+function initMap() {
+  if (!LEAFLET_LOADED) return;
+  mapInstance = L.map('map', {
+    center: [35, 105], zoom: 4,
+    zoomControl: true,
+    attributionControl: false,
+  });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+  }).addTo(mapInstance);
+}
+
+function clearMapMarkers() {
+  if (mapMarkers.length > 0) {
+    mapMarkers.forEach(m => mapInstance?.removeLayer(m));
+    mapMarkers = [];
+  }
+}
+
+function plotMapMarkers() {
+  if (!mapInstance) initMap();
+  if (!mapInstance) return;
+  clearMapMarkers();
+
+  const points = [];
+  const cityGroups = {};
+
+  for (let i = 0; i < 256; i++) {
+    const r = state.results[i];
+    if (!r?.data) continue;
+    const d = r.data;
+    if (d.lat == null || d.lng == null) continue;
+
+    const lat = parseFloat(d.lat);
+    const lng = parseFloat(d.lng);
+    const rgeo = d.rgeo || {};
+    const city = rgeo.city || rgeo.province || '未知';
+    if (!cityGroups[city]) cityGroups[city] = [];
+    cityGroups[city].push({ index: i, ip: state.ips[i], lat, lng });
+
+    const marker = L.circleMarker([lat, lng], {
+      radius: 7,
+      color: '#0071e3',
+      fillColor: '#0071e3',
+      fillOpacity: 0.7,
+      weight: 1.5,
+    }).addTo(mapInstance);
+
+    const ip = state.ips[i];
+    const detailAddr = `${rgeo.province || ''}${rgeo.city || ''}${rgeo.district || ''}`;
+
+    marker.bindPopup(`
+      <div class="popup-ip">${ip}</div>
+      <div class="popup-loc">${detailAddr || '未知位置'}</div>
+    `);
+
+    marker.on('click', async () => {
+      const detail = await fetchDetailAddress(lat, lng);
+      marker.setPopupContent(`
+        <div class="popup-ip">${ip}</div>
+        <div class="popup-loc">${detailAddr || '未知位置'}</div>
+        ${detail ? `<div class="popup-detail">${detail.detail || ''}${detail.areaName ? ' · ' + detail.areaName : ''}</div>` : ''}
+      `);
+      marker.openPopup();
+      // Also update address section
+      showAddressDetail(i);
+      highlightCell(i);
+    });
+
+    mapMarkers.push(marker);
+    points.push([lat, lng]);
+  }
+
+  if (points.length > 1) {
+    const bounds = L.latLngBounds(points);
+    mapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+  } else if (points.length === 1) {
+    mapInstance.setView(points[0], 13);
+  }
+}
+
+function focusMapToIP(index) {
+  const r = state.results[index];
+  if (!r?.data) return;
+  const lat = parseFloat(r.data.lat);
+  const lng = parseFloat(r.data.lng);
+  if (isNaN(lat) || isNaN(lng)) return;
+
+  if (!mapInstance) initMap();
+  if (mapInstance) {
+    mapInstance.setView([lat, lng], 15, { animate: true });
+    // Find and open marker
+    showAddressDetail(index);
+    highlightCell(index);
+    dom.addressSection.classList.add('show');
+    dom.mapSection.classList.add('show');
+
+    // Scroll to address section
+    dom.addressSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function highlightCell(index) {
+  const cell = getCell(index);
+  if (!cell) return;
+  cell.style.transform = 'scale(1.2)';
+  cell.style.boxShadow = '0 0 0 2px #0071e3';
+  setTimeout(() => {
+    cell.style.transform = '';
+    cell.style.boxShadow = '';
+  }, 1500);
+}
+
+// ==================== START ====================
+init();
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@
 <title>IP 邻居 — C 段网络地址扫描器</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin/>
 <style>
-/* ── Reset & Base ── */
+/* ── Reset ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;font-size:16px}
 body{
@@ -30,7 +30,7 @@ nav{
 .nav-inner{max-width:1024px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
 .nav-brand{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#1d1d1f}
 .nav-brand svg{width:14px;height:14px;opacity:0.5}
-.nav-status{font-size:12px;font-weight:500;color:#86868b;font-variant-numeric:tabular-nums}
+.nav-status{font-size:12px;font-weight:500;color:#86868b}
 .nav-status.ok{color:#30d158}
 .nav-status.err{color:#ff3b30}
 
@@ -45,7 +45,7 @@ nav{
 .hero-title .thin{font-weight:400;color:#86868b}
 .hero-sub{font-size:clamp(16px,1.6vw,20px);color:#86868b;text-align:center;line-height:1.6;max-width:440px;margin-bottom:40px}
 
-/* ── Warning link ── */
+/* ── Warning ── */
 .privacy-warn{display:flex;align-items:center;gap:6px;margin-bottom:20px;font-size:12px;color:#ff9500;text-decoration:none;transition:opacity 0.15s}
 .privacy-warn:hover{opacity:0.7}
 .privacy-warn svg{width:14px;height:14px;flex-shrink:0}
@@ -54,9 +54,9 @@ nav{
 .scan-card{width:100%;padding:24px;background:#fff;border-radius:20px;box-shadow:0 2px 20px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04)}
 .input-group{display:flex;gap:8px}
 .input-group input{flex:1;height:48px;padding:0 18px;background:#f5f5f7;border:1px solid transparent;border-radius:12px;font-size:14px;font-family:inherit;outline:none;transition:border-color 0.2s,background 0.2s}
-.input-group input::placeholder{color:#aeaeb2}
 .input-group input:focus{border-color:#0071e3;background:#fff}
-.input-group button{height:48px;padding:0 24px;background:#0071e3;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity 0.2s,transform 0.15s;white-space:nowrap}
+.input-group input::placeholder{color:#aeaeb2}
+.input-group button{height:48px;padding:0 24px;background:#0071e3;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;transition:opacity 0.15s,transform 0.15s}
 .input-group button:hover{opacity:0.85}
 .input-group button:active{transform:scale(0.97)}
 .input-group button:disabled{opacity:0.3;cursor:not-allowed;transform:none}
@@ -66,23 +66,23 @@ nav{
 .progress-area.show{display:block}
 .progress-bar{width:100%;height:2px;background:rgba(0,0,0,0.05);border-radius:2px;overflow:hidden}
 .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#0071e3,#40b4ff);border-radius:2px;transition:width 0.3s}
-.progress-text{display:flex;justify-content:space-between;font-size:11px;color:#aeaeb2;margin-top:6px;font-variant-numeric:tabular-nums}
+.progress-text{display:flex;justify-content:space-between;font-size:11px;color:#aeaeb2;margin-top:6px}
 .progress-text em{font-style:normal;color:#0071e3;font-weight:600}
 
 /* ── Error ── */
 .error-banner{display:none;width:100%;margin-top:12px;padding:12px 16px;background:#fff2f0;border:1px solid #ffccc7;border-radius:12px;font-size:12px;color:#d00;line-height:1.5}
 .error-banner.show{display:block}
-.error-banner .retry-btn{padding:4px 14px;background:#d00;color:#fff;border:none;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit;margin-top:6px}
+.error-banner button{padding:4px 14px;background:#d00;color:#fff;border:none;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit;margin-top:6px}
 
 /* ── Address ── */
 .address-section{display:none;max-width:960px;margin:0 auto;padding:0 24px 24px}
 .address-section.show{display:block}
 .address-card{background:#fff;border-radius:20px;box-shadow:0 2px 20px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04);padding:28px 32px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start}
-.address-meta{font-size:12px;color:#aeaeb2;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px}
-.address-ip{font-size:28px;font-weight:700;letter-spacing:-0.03em;color:#1d1d1f;margin-bottom:4px;word-break:break-all}
-.address-detail{font-size:16px;color:#86868b;line-height:1.5}
-.address-detail strong{color:#1d1d1f;font-weight:500}
-.address-coord{font-size:12px;color:#aeaeb2;font-family:'SF Mono','Menlo','Consolas',monospace;margin-top:8px}
+.address-meta{font-size:12px;color:#aeaeb2;letter-spacing:0.5px;margin-bottom:8px}
+.address-ip{font-size:28px;font-weight:700;letter-spacing:-0.03em;color:#1d1d1f;margin-bottom:8px;word-break:break-all}
+.address-detail{font-size:16px;color:#1d1d1f;line-height:1.6}
+.address-detail small{display:block;color:#86868b;font-size:14px;margin-top:2px}
+.address-detail .coord{font-size:12px;color:#aeaeb2;font-family:'SF Mono','Consolas',monospace;margin-top:6px}
 .address-stats{display:flex;gap:20px;padding:12px 20px;background:#f5f5f7;border-radius:12px;white-space:nowrap}
 .address-stats-item{text-align:center}
 .address-stats-item .num{font-size:22px;font-weight:700;color:#1d1d1f}
@@ -110,7 +110,6 @@ nav{
 .ip-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#f5f5f7;border-radius:3px;font-size:8px;font-weight:500;color:#aeaeb2;font-family:'SF Mono','Consolas',monospace;cursor:pointer;user-select:none;transition:background 0.15s,transform 0.15s,color 0.15s}
 .ip-cell:hover{background:#e8e8ed;transform:scale(1.12);z-index:2}
 .ip-cell.found{background:#0071e3;color:#fff}
-.ip-cell.found:hover{background:#005bb5}
 
 /* ── Modal ── */
 .modal-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s}
@@ -119,56 +118,48 @@ nav{
 .modal-icon{margin-bottom:12px;opacity:0.4}
 .modal-title{font-size:13px;font-weight:600;color:#86868b;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
 .modal-ip{font-size:36px;font-weight:700;letter-spacing:-0.03em;color:#1d1d1f;margin-bottom:4px;font-family:'SF Mono','Consolas',monospace;word-break:break-all;user-select:all}
-.modal-ip-label{font-size:12px;color:#aeaeb2;margin-bottom:20px}
+.modal-loc{font-size:12px;color:#aeaeb2;margin-bottom:20px}
 .modal-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .modal-actions button{padding:8px 20px;border-radius:20px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;border:none;transition:opacity 0.15s,transform 0.15s}
 .modal-actions button:active{transform:scale(0.97)}
 .btn-primary{background:#0071e3;color:#fff}
-.btn-primary:hover{opacity:0.85}
 .btn-ghost{background:#f5f5f7;color:#1d1d1f}
-.btn-ghost:hover{background:#e8e8ed}
 
 /* ── Toast ── */
 .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;background:#1d1d1f;color:#fff;padding:10px 22px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.25s}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-/* ── Leaflet tweaks ── */
+/* ── Leaflet ── */
 .leaflet-popup-content-wrapper{border-radius:14px!important;box-shadow:0 4px 24px rgba(0,0,0,0.08)!important;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif!important}
 .leaflet-popup-content{margin:12px 16px!important;font-size:13px!important;line-height:1.5!important}
-.popup-ip{font-weight:600;font-size:15px;margin-bottom:2px}
-.popup-loc{color:#86868b;font-size:12px}
-.popup-extra{color:#1d1d1f;font-size:13px;margin-top:4px;padding-top:4px;border-top:1px solid rgba(0,0,0,0.06)}
-.leaflet-control-zoom{border:1px solid rgba(0,0,0,0.08)!important;border-radius:10px!important;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)!important}
-.leaflet-control-zoom a{border-radius:0!important;width:32px!important;height:32px!important;line-height:32px!important;font-size:16px!important;color:#1d1d1f!important}
+.popup-ip{font-weight:600;font-size:15px;margin-bottom:4px}
+.popup-loc{color:#1d1d1f;font-size:14px;margin-bottom:2px}
+.popup-detail{color:#0071e3;font-size:13px;margin-top:4px;padding-top:4px;border-top:1px solid rgba(0,0,0,0.06)}
+.popup-loading{color:#aeaeb2;font-size:12px;font-style:italic}
 
 /* ── Footer ── */
 .site-footer{text-align:center;padding:0 24px 40px;font-size:11px;color:#aeaeb2}
 .site-footer a{color:#86868b;text-decoration:none}
-.site-footer a:hover{text-decoration:underline}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .address-card,.map-wrap,.grid-wrap{animation:fadeUp 0.5s ease-out}
 
 @media(max-width:768px){
-  .hero{padding:80px 20px 40px}
-  .hero-title{font-size:clamp(36px,12vw,56px)}
+  .hero{padding:80px 20px 40px}.hero-title{font-size:clamp(36px,12vw,56px)}
   .scan-card{padding:16px;border-radius:16px}
   .address-card{padding:20px;grid-template-columns:1fr}
-  .map-wrap{height:360px}.ip-grid{gap:2px}
-  .ip-cell{font-size:6px;border-radius:2px}
-  .grid-section{padding:0 16px 80px}
-  .modal-card{padding:24px}.modal-ip{font-size:26px}
+  .map-wrap{height:360px}.ip-grid{gap:2px}.ip-cell{font-size:6px;border-radius:2px}
+  .grid-section{padding:0 16px 80px}.modal-card{padding:24px}.modal-ip{font-size:26px}
 }
 @media(max-width:480px){
-  .input-group{flex-direction:column}
-  .address-ip{font-size:20px}.map-wrap{height:280px}
-  .ip-cell{font-size:5px}
+  .input-group{flex-direction:column}.address-ip{font-size:20px}
+  .map-wrap{height:280px}.ip-cell{font-size:5px}
 }
 </style>
 </head>
 <body>
 
-<!-- ════ 欢迎弹窗 ════ -->
+<!-- ═══ 欢迎弹窗 ═══ -->
 <div class="modal-overlay" id="welcomeModal">
   <div class="modal-card">
     <svg class="modal-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -178,19 +169,19 @@ nav{
     </svg>
     <div class="modal-title">你的访问 IP</div>
     <div class="modal-ip" id="visitorIp">检测中...</div>
-    <div class="modal-ip-label" id="visitorIpLabel"></div>
+    <div class="modal-loc" id="visitorLoc"></div>
     <div class="modal-actions">
-      <button class="btn-primary" onclick="useVisitorIP()">使用此 IP 扫描</button>
+      <button class="btn-primary" onclick="useVisitorIP()">使用此 IP 扫描邻居</button>
       <button class="btn-ghost" onclick="copyVisitorIP()">复制地址</button>
-      <button class="btn-ghost" onclick="closeVisitorModal()">关闭</button>
+      <button class="btn-ghost" onclick="closeModal()">关闭</button>
     </div>
   </div>
 </div>
 
-<!-- ════ Toast ════ -->
+<!-- ═══ Toast ═══ -->
 <div class="toast" id="toast"></div>
 
-<!-- ════ Nav ════ -->
+<!-- ═══ Nav ═══ -->
 <nav>
   <div class="nav-inner">
     <div class="nav-brand">
@@ -205,24 +196,24 @@ nav{
   </div>
 </nav>
 
-<!-- ════ Hero ════ -->
+<!-- ═══ Hero ═══ -->
 <section class="hero" id="hero">
   <div class="hero-inner">
     <div class="hero-label">C 段网络地址扫描</div>
     <h1 class="hero-title">IP <span class="thin">邻居</span></h1>
-    <p class="hero-sub">输入任意 IPv4 地址，扫描同网段 256 个邻居，地图可视化呈现</p>
+    <p class="hero-sub">输入 IPv4 地址，扫描同网段 256 个 IP 的邻居，地图可视化</p>
     <a class="privacy-warn" href="https://www.youtube.com/watch?v=PvTiPDY9Ap8" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
       IP 地址追踪如何泄露你的隐私
     </a>
     <div class="scan-card">
       <div class="input-group">
-        <input id="ipInput" placeholder="输入 IPv4 地址，如 8.8.8.8" spellcheck="false" autocomplete="off" maxlength="15">
+        <input id="ipInput" placeholder="输入 IPv4 地址，如 54.70.174.10" spellcheck="false" autocomplete="off" maxlength="15">
         <button id="scanBtn" onclick="startScan()">扫描</button>
       </div>
       <div class="error-banner" id="errorBanner">
         <span id="errorText"></span>
-        <div><span class="retry-btn" onclick="retryScan()">重试</span></div>
+        <div><button onclick="retryScan()">重试</button></div>
       </div>
       <div class="progress-area" id="progressArea">
         <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
@@ -235,43 +226,49 @@ nav{
   </div>
 </section>
 
-<!-- ════ Address ════ -->
+<!-- ═══ Address ═══ -->
 <section class="address-section" id="addressSection"><div id="addressBody"></div></section>
 
-<!-- ════ Map ════ -->
-<section class="map-section" id="mapSection">
-  <div class="map-wrap"><div id="map"></div></div>
-</section>
+<!-- ═══ Map ═══ -->
+<section class="map-section" id="mapSection"><div class="map-wrap"><div id="map"></div></div></section>
 
-<!-- ════ Grid ════ -->
+<!-- ═══ Grid ═══ -->
 <section class="grid-section" id="gridSection">
   <div class="grid-header"><h2>邻域网格</h2><span id="gridCount">256 个地址</span></div>
   <div class="grid-legend">
-    <div class="grid-legend-item"><div class="grid-legend-dot empty"></div>未定位</div>
+    <div class="grid-legend-item"><div class="grid-legend-dot empty"></div>无定位数据</div>
     <div class="grid-legend-item"><div class="grid-legend-dot found"></div>已定位</div>
   </div>
   <div class="grid-wrap"><div class="ip-grid" id="ipGrid"></div></div>
 </section>
 
-<!-- ════ Footer ════ -->
 <footer class="site-footer">
-  数据来源 <a href="https://ipinfo.io" target="_blank" rel="noopener">ipinfo.io</a>
-  · 部署于 <a href="https://pages.github.com" target="_blank" rel="noopener">GitHub Pages</a>
+  数据来源 <a href="https://apimobile.meituan.com" target="_blank" rel="noopener">美团定位 API</a>
+  · <a href="https://github.com/m2dumpling/ip-neighbors" target="_blank" rel="noopener">GitHub</a>
 </footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin></script>
 <script>
-/* ──────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════
    IP 邻居 — C 段网络地址扫描器
-   纯静态站点 · 零后端 · GitHub Pages 即插即用
-   ────────────────────────────────────────────────────────────── */
+   数据: 美团 IP 定位 + 逆地理编码
+   代理: Cloudflare Worker (部署 _worker.js)
+   ═══════════════════════════════════════════════════════════════════ */
 
-// ──── 常量 ──────────────────────────────────────────
-const API = "https://ipinfo.io/";           // + IP + "/json"
-const CONCURRENCY = 12;                      // 并发请求数
-const TIMEOUT_MS = 8000;
+// ── 配置 ── 替换为你的 Cloudflare Worker 地址 ──────────────
+const WORKER = "https://ip-proxy.YOUR-SUBDOMAIN.workers.dev/?";
 
-// ──── DOM ───────────────────────────────────────────
+const MEITUAN_GEO    = "https://apimobile.meituan.com/locate/v2/ip/loc";
+const MEITUAN_DETAIL = "https://apimobile.meituan.com/group/v1/city/latlng";
+const CONCURRENCY = 14;
+const TIMEOUT_MS  = 10000;
+
+// ── 代理包装 ─────────────────────────────────────────
+function proxy(url) {
+  return WORKER + "url=" + encodeURIComponent(url);
+}
+
+// ── DOM ────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const D = {
   input:      $("ipInput"),
@@ -291,145 +288,131 @@ const D = {
   errorText:  $("errorText"),
   modal:      $("welcomeModal"),
   visitorIp:  $("visitorIp"),
-  visitorLabel: $("visitorIpLabel"),
+  visitorLoc: $("visitorLoc"),
   toast:      $("toast"),
 };
 
-// ──── 状态 ──────────────────────────────────────────
+// ── 状态 ────────────────────────────────────────────
 let S = {
   prefix: "",
   ips: [],
-  results: null,          // Array(256) of API response or null
+  results: null,  // Array(256): {ip, data: MeituanGeo} | null
+  details: {},     // {ip: MeituanDetail}  lazy-loaded
   foundCount: 0,
   scanning: false,
-  abortCtrl: null,        // AbortController
+  abort: null,
   cityMap: {},
   visitorIP: null,
-  visitorIsV4: false,
+  visitorV4: false,
 };
-let mapInst = null;
-let markers = [];
+let mapInst = null, markers = [];
 
-// ═══════════════════════════════════════════════════════
-//  欢迎弹窗 — 检测访客 IP
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
+//  访客 IP 检测
+// ═════════════════════════════════════════════════════
 (async function detectVisitor() {
   try {
-    const r = await fetch(API + "json", { signal: AbortSignal.timeout(5000) });
+    const r = await fetch("https://ipinfo.io/json", {
+      signal: AbortSignal.timeout(6000),
+    });
     const d = await r.json();
     if (d.ip) {
       S.visitorIP = d.ip;
-      S.visitorIsV4 = /^[\d.]+$/.test(d.ip) && d.ip.split(".").length === 4;
+      S.visitorV4 = /^\d+\.\d+\.\d+\.\d+$/.test(d.ip);
       D.visitorIp.textContent = d.ip;
-      const parts = [d.city, d.region, d.country].filter(Boolean);
-      D.visitorLabel.textContent = parts.length
-        ? parts.join(" · ")
-        : S.visitorIsV4 ? "" : "仅支持 IPv4 进行 C 段扫描";
+      D.visitorLoc.textContent = S.visitorV4
+        ? [d.city, d.region, d.country].filter(Boolean).join(" · ")
+        : "当前为 IPv6，仅支持 IPv4 C 段扫描";
     } else {
       D.visitorIp.textContent = "未检测到";
-      D.visitorLabel.textContent = "请手动输入 IPv4 地址";
     }
   } catch {
     D.visitorIp.textContent = "检测失败";
-    D.visitorLabel.textContent = "请手动输入 IPv4 地址";
   }
   D.modal.classList.add("show");
 })();
 
-function closeVisitorModal() { D.modal.classList.remove("show"); }
+function closeModal() { D.modal.classList.remove("show"); }
 
 function copyVisitorIP() {
   const ip = S.visitorIP;
-  if (!ip || ip === "检测中..." || ip === "检测失败" || ip === "未检测到") {
-    return toast("暂无 IP 可复制");
-  }
+  if (!ip || !S.visitorV4) return toast("暂无 IPv4 地址可复制");
   navigator.clipboard.writeText(ip).then(
     () => toast("已复制 " + ip),
-    () => toast("请手动选中 IP 文字复制")
+    () => toast("请手动选中 IP 复制")
   );
 }
 
 function useVisitorIP() {
-  if (!S.visitorIsV4 || !S.visitorIP) {
-    return toast(S.visitorIP ? "C 段扫描仅支持 IPv4" : "未检测到 IP");
-  }
+  if (!S.visitorV4 || !S.visitorIP) return toast(S.visitorIP ? "仅支持 IPv4 扫描" : "未检测到 IP");
   D.input.value = S.visitorIP;
-  closeVisitorModal();
+  closeModal();
   startScan();
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 //  网格
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 function buildGrid() {
-  let html = "";
-  for (let i = 0; i < 256; i++) {
-    html += `<div class="ip-cell" data-idx="${i}" title=".${i}">${i}</div>`;
-  }
-  D.ipGrid.innerHTML = html;
-  // 事件委托
+  let h = "";
+  for (let i = 0; i < 256; i++) h += `<div class="ip-cell" data-idx="${i}">${i}</div>`;
+  D.ipGrid.innerHTML = h;
   D.ipGrid.addEventListener("click", e => {
-    const cell = e.target.closest(".ip-cell");
-    if (cell) focusOnIP(+cell.dataset.idx);
+    const c = e.target.closest(".ip-cell");
+    if (c) focusOnIP(+c.dataset.idx);
   });
 }
-
-function cellEl(i) { return D.ipGrid.children[i]; }
+function cell(i) { return D.ipGrid.children[i]; }
 
 function resetGrid() {
-  for (let i = 0; i < 256; i++) cellEl(i).className = "ip-cell";
-  S.foundCount = 0;
-  S.cityMap = {};
+  for (let i = 0; i < 256; i++) cell(i).className = "ip-cell";
+  S.foundCount = 0; S.cityMap = {}; S.details = {};
 }
 
-// ═══════════════════════════════════════════════════════
-//  IP 校验
-// ═══════════════════════════════════════════════════════
-function parsePrefix(raw) {
+// ═════════════════════════════════════════════════════
+//  解析 IP
+// ═════════════════════════════════════════════════════
+function parse(raw) {
   const m = raw.trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!m) return null;
-  for (let i = 1; i <= 4; i++) {
-    if (+m[i] > 255) return null;
-  }
-  // 拒绝 0.x.x.x 和保留段，但仍允许扫描（大部分会返回 bogon）
-  return m.slice(1, 3).join(".");  // "X.Y"
+  if (!m || m.slice(1).some(n => +n > 255)) return null;
+  return m.slice(1, 4).join(".");
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 //  API 调用
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 async function geoLookup(ip, signal) {
   try {
-    const r = await fetch(API + ip + "/json", { signal });
+    const url = proxy(`${MEITUAN_GEO}?rgeo=true&ip=${ip}`);
+    const r = await fetch(url, { signal });
     if (!r.ok) return null;
     const d = await r.json();
-    // 有城市或坐标 = 成功定位
-    if (d.city || d.loc) {
-      // 解析 loc: "lat,lng"
-      if (d.loc && typeof d.loc === "string") {
-        const [lat, lng] = d.loc.split(",");
-        d._lat = +lat;
-        d._lng = +lng;
-      }
-      return d;
-    }
-    return null;  // bogon 或未定位
+    return d?.data ? d.data : null;
   } catch (e) {
-    if (e.name === "AbortError") return null;
     return null;
   }
 }
 
-// ═══════════════════════════════════════════════════════
+async function fetchDetail(lat, lng) {
+  try {
+    const url = proxy(`${MEITUAN_DETAIL}/${lat},${lng}?tag=0`);
+    const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d?.data || null;
+  } catch {
+    return null;
+  }
+}
+
+// ═════════════════════════════════════════════════════
 //  扫描流程
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 async function startScan() {
   if (S.scanning) return;
 
-  const raw = D.input.value.trim();
-  // 完整 IPv4 才能解析出 C 段
-  const m = raw.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!m || m.slice(1).some(n => +n > 255)) {
+  const prefix = parse(D.input.value);
+  if (!prefix) {
     D.input.style.borderColor = "#ff3b30";
     setTimeout(() => D.input.style.borderColor = "", 1500);
     return;
@@ -437,14 +420,19 @@ async function startScan() {
   D.input.style.borderColor = "";
   D.error.classList.remove("show");
 
-  const prefix = m[1] + "." + m[2] + "." + m[3];
+  // 检查 Worker 是否配置
+  if (WORKER.includes("YOUR-SUBDOMAIN")) {
+    return showError("请先在代码中配置你的 Cloudflare Worker 地址（WORKER 变量）");
+  }
+
   S.prefix = prefix;
   S.ips = Array.from({ length: 256 }, (_, i) => `${prefix}.${i}`);
   S.results = new Array(256).fill(null);
   S.foundCount = 0;
   S.scanning = true;
-  S.abortCtrl = new AbortController();
+  S.abort = new AbortController();
   S.cityMap = {};
+  S.details = {};
 
   // UI
   D.scanBtn.textContent = "扫描中…";
@@ -463,19 +451,18 @@ async function startScan() {
 
   await doScan();
   S.scanning = false;
-
-  if (S.abortCtrl.signal.aborted) return;
+  if (S.abort.signal.aborted) return;
 
   D.scanBtn.textContent = "重新扫描";
   D.scanBtn.disabled = false;
 
   if (S.foundCount === 0) {
-    D.navStatus.textContent = "未发现可定位节点";
+    D.navStatus.textContent = "未发现节点";
     D.navStatus.className = "err";
-    return showError("该 C 段未发现可定位的公网节点。大多数 C 段地址为私有或未分配。");
+    return showError("该 C 段未发现可定位的 IP 节点");
   }
 
-  D.navStatus.textContent = `扫描完成 · ${S.foundCount} 个邻居`;
+  D.navStatus.textContent = `扫描完成 · ${S.foundCount} 个邻居在线`;
   D.navStatus.className = "ok";
   D.gridCount.textContent = `256 个地址 · ${S.foundCount} 个已定位`;
   D.progressFill.style.width = "100%";
@@ -483,32 +470,31 @@ async function startScan() {
   D.found.textContent = S.foundCount;
 
   await renderMap();
-  const first = S.results.findIndex(r => r !== null);
-  if (first >= 0) renderAddress(first);
+  const first = S.results.findIndex(r => r);
+  if (first >= 0) await renderAddress(first);
   D.addrSec.classList.add("show");
   D.mapSec.classList.add("show");
   setTimeout(() => mapInst?.invalidateSize(), 250);
 }
 
 async function doScan() {
-  let idx = 0;
-  let found = 0;
+  let idx = 0, found = 0;
   const total = 256;
-  const signal = S.abortCtrl.signal;
+  const sig = S.abort.signal;
 
   async function worker() {
     while (idx < total) {
-      if (signal.aborted) return;
+      if (sig.aborted) return;
       const i = idx++;
-      const ip = S.ips[i];
-      const d = await geoLookup(ip, signal);
+      const d = await geoLookup(S.ips[i], sig);
       S.results[i] = d;
 
       if (d) {
         found++;
         S.foundCount = found;
-        cellEl(i).classList.add("found");
-        const city = d.city || d.region || "";
+        cell(i).classList.add("found");
+        const rg = d.rgeo || {};
+        const city = rg.city || rg.province || "";
         if (city) {
           if (!S.cityMap[city]) S.cityMap[city] = [];
           S.cityMap[city].push(i);
@@ -526,51 +512,60 @@ async function doScan() {
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 //  地址卡片
-// ═══════════════════════════════════════════════════════
-function renderAddress(idx) {
+// ═════════════════════════════════════════════════════
+async function renderAddress(idx) {
   const d = S.results[idx];
   if (!d) return;
 
   const ip = S.ips[idx];
-  const loc = [d.city, d.region, d.country].filter(Boolean).join(" · ");
-  const coords = d._lat != null ? `${d._lat.toFixed(4)}, ${d._lng.toFixed(4)}` : "无坐标";
+  const rg = d.rgeo || {};
+
+  let detailHTML = "";
+  if (d.lat != null && d.lng != null) {
+    // 查 API 2 获取精确地址
+    if (!S.details[ip]) {
+      S.details[ip] = await fetchDetail(d.lat, d.lng);
+    }
+    const dt = S.details[ip];
+    if (dt) {
+      detailHTML = `
+        <strong>${dt.detail || rg.city || ""}</strong>
+        <small>${[dt.province, dt.city, dt.district].filter(Boolean).join(" · ")}</small>
+        ${dt.areaName ? `<small>📍 ${dt.areaName}</small>` : ""}
+        <div class="coord">${d.lat}, ${d.lng}</div>`;
+    }
+  }
+
+  if (!detailHTML) {
+    detailHTML = `
+      <strong>${rg.city || rg.province || "未知"}</strong>
+      <small>${[rg.country, rg.province, rg.city, rg.district].filter(Boolean).join(" · ")}</small>
+      <div class="coord">${d.lat ?? "—"}, ${d.lng ?? "—"}</div>`;
+  }
 
   D.addrBody.innerHTML = `
     <div class="address-card">
       <div>
-        <div class="address-meta">${d.hostname ? d.hostname + " · " : ""}当前位置</div>
+        <div class="address-meta">当前位置</div>
         <div class="address-ip">${ip}</div>
-        <div class="address-detail">
-          <strong>${loc || "未知位置"}</strong>
-          ${d.org ? `<br><span style="color:#86868b">${d.org}</span>` : ""}
-        </div>
-        <div class="address-coord">${coords}</div>
+        <div class="address-detail">${detailHTML}</div>
       </div>
       <div class="address-stats">
-        <div class="address-stats-item">
-          <div class="num">${S.foundCount}</div>
-          <div class="label">邻居节点</div>
-        </div>
-        <div class="address-stats-item">
-          <div class="num">${Object.keys(S.cityMap).length}</div>
-          <div class="label">覆盖城市</div>
-        </div>
+        <div class="address-stats-item"><div class="num">${S.foundCount}</div><div class="label">邻居节点</div></div>
+        <div class="address-stats-item"><div class="num">${Object.keys(S.cityMap).length}</div><div class="label">覆盖城市</div></div>
       </div>
     </div>`;
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 //  地图
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 async function renderMap() {
   if (!mapInst) {
     mapInst = L.map("map", {
-      center: [35, 105],
-      zoom: 4,
-      zoomControl: true,
-      attributionControl: false,
+      center: [35, 105], zoom: 4, zoomControl: true, attributionControl: false,
     });
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
@@ -582,32 +577,41 @@ async function renderMap() {
 
   for (let i = 0; i < 256; i++) {
     const d = S.results[i];
-    if (!d || d._lat == null || d._lng == null) continue;
+    if (!d || d.lat == null || d.lng == null) continue;
 
     const ip = S.ips[i];
-    const loc = [d.city, d.region, d.country].filter(Boolean).join(", ");
+    const rg = d.rgeo || {};
+    const locText = [rg.province, rg.city, rg.district].filter(Boolean).join(" · ");
+    const lat = +d.lat, lng = +d.lng;
 
-    const m = L.circleMarker([d._lat, d._lng], {
-      radius: 7,
-      color: "#0071e3",
-      fillColor: "#0071e3",
-      fillOpacity: 0.7,
-      weight: 1.5,
+    const m = L.circleMarker([lat, lng], {
+      radius: 7, color: "#0071e3", fillColor: "#0071e3", fillOpacity: 0.7, weight: 1.5,
     }).addTo(mapInst);
 
-    const popup = `
+    // 初始 popup 显示基本信息
+    m.bindPopup(`
       <div class="popup-ip">${ip}</div>
-      <div class="popup-loc">${loc || "未知位置"}</div>
-      ${d.org ? `<div class="popup-extra">${d.org}</div>` : ""}
-    `;
-    m.bindPopup(popup);
-    m.on("click", () => {
+      <div class="popup-loc">${rg.province || ""} ${rg.city || ""} ${rg.district || ""}</div>
+      <div class="popup-loading" id="popup-loading-${i}">点击加载详情...</div>
+    `);
+
+    m.on("click", async () => {
+      // 懒加载详情
+      if (!S.details[ip] && lat && lng) {
+        S.details[ip] = await fetchDetail(lat, lng);
+      }
+      const dt = S.details[ip];
+      m.setPopupContent(`
+        <div class="popup-ip">${ip}</div>
+        <div class="popup-loc">${[rg.country, rg.province, rg.city, rg.district].filter(Boolean).join(" · ") || "未知位置"}</div>
+        ${dt ? `<div class="popup-detail">${dt.detail || ""}${dt.areaName ? " · " + dt.areaName : ""}</div>` : ""}
+      `).openPopup();
       renderAddress(i);
       highlightCell(i);
     });
 
     markers.push(m);
-    pts.push([d._lat, d._lng]);
+    pts.push([lat, lng]);
   }
 
   if (pts.length > 1) {
@@ -622,14 +626,16 @@ function clearMarkers() {
   markers.length = 0;
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 //  交互
-// ═══════════════════════════════════════════════════════
-function focusOnIP(i) {
+// ═════════════════════════════════════════════════════
+async function focusOnIP(i) {
   const d = S.results[i];
-  if (!d || d._lat == null || d._lng == null) return;
-  mapInst?.setView([d._lat, d._lng], 14, { animate: true });
-  renderAddress(i);
+  if (!d) return;
+  if (d.lat != null && d.lng != null) {
+    mapInst?.setView([+d.lat, +d.lng], 14, { animate: true });
+  }
+  await renderAddress(i);
   highlightCell(i);
   D.addrSec.classList.add("show");
   D.mapSec.classList.add("show");
@@ -637,16 +643,9 @@ function focusOnIP(i) {
 }
 
 function highlightCell(i) {
-  const c = cellEl(i);
-  if (!c) return;
-  c.style.transform = "scale(1.2)";
-  c.style.boxShadow = "0 0 0 2px #0071e3";
-  c.style.zIndex = "2";
-  setTimeout(() => {
-    c.style.transform = "";
-    c.style.boxShadow = "";
-    c.style.zIndex = "";
-  }, 1500);
+  const c = cell(i); if (!c) return;
+  c.style.transform = "scale(1.2)"; c.style.boxShadow = "0 0 0 2px #0071e3"; c.style.zIndex = "2";
+  setTimeout(() => { c.style.transform = ""; c.style.boxShadow = ""; c.style.zIndex = ""; }, 1500);
 }
 
 function showError(msg) {
@@ -659,24 +658,21 @@ function retryScan() {
   startScan();
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 //  Toast
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 function toast(msg) {
   const t = D.toast;
-  t.textContent = msg;
-  t.classList.add("show");
+  t.textContent = msg; t.classList.add("show");
   clearTimeout(t._tid);
   t._tid = setTimeout(() => t.classList.remove("show"), 2000);
 }
 
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 //  初始化
-// ═══════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════
 buildGrid();
-D.input.addEventListener("keydown", e => {
-  if (e.key === "Enter") startScan();
-});
+D.input.addEventListener("keydown", e => { if (e.key === "Enter") startScan(); });
 </script>
 </body>
 </html>

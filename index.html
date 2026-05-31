@@ -93,7 +93,7 @@ nav{
 .results-row{display:none;max-width:1280px;margin:0 auto;padding:0 24px 120px}
 .results-row.show{display:flex;gap:20px;align-items:flex-start}
 .results-map{flex:1 1 0;min-width:0}
-.results-grid{flex:0 0 340px}
+.results-grid{flex:0 0 440px}
 .map-wrap{width:100%;height:600px;border-radius:20px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04)}
 #map{width:100%;height:100%;background:#f5f5f7}
 .grid-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
@@ -105,8 +105,8 @@ nav{
 .grid-legend-dot.empty{background:#f0f0f2}
 .grid-legend-dot.found{background:#0071e3}
 .grid-wrap{background:#fff;border-radius:16px;padding:12px;box-shadow:0 2px 20px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04)}
-.ip-grid{display:grid;grid-template-columns:repeat(16,1fr);gap:3px}
-.ip-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#f5f5f7;border-radius:3px;font-size:8px;font-weight:500;color:#aeaeb2;font-family:'SF Mono','Consolas',monospace;cursor:pointer;user-select:none;transition:background 0.15s,transform 0.15s,color 0.15s}
+.ip-grid{display:grid;grid-template-columns:repeat(16,1fr);gap:4px}
+.ip-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#f5f5f7;border-radius:4px;font-size:11px;font-weight:500;color:#aeaeb2;font-family:'SF Mono','Consolas',monospace;cursor:pointer;user-select:none;transition:background 0.15s,transform 0.15s,color 0.15s}
 .ip-cell:hover{background:#e8e8ed;transform:scale(1.12);z-index:2}
 .ip-cell.found{background:#0071e3;color:#fff}
 
@@ -153,12 +153,12 @@ nav{
   .hero{padding:80px 20px 40px}.hero-title{font-size:clamp(36px,12vw,56px)}
   .scan-card{padding:16px;border-radius:16px}
   .address-card{padding:20px;grid-template-columns:1fr}
-  .map-wrap{height:360px}.ip-grid{gap:2px}.ip-cell{font-size:6px;border-radius:2px}
+  .map-wrap{height:360px}.ip-grid{gap:3px}.ip-cell{font-size:9px;border-radius:3px}
   .modal-card{padding:24px}.modal-ip{font-size:26px}
 }
 @media(max-width:480px){
   .input-group{flex-direction:column}.address-ip{font-size:20px}
-  .map-wrap{height:280px}.ip-cell{font-size:5px}
+  .map-wrap{height:280px}.ip-cell{font-size:7px}
 }
 </style>
 </head>
@@ -482,7 +482,10 @@ async function startScan() {
   if (showIdx >= 0) await renderAddress(showIdx);
   D.addrSec.classList.add("show");
   D.resultsRow.classList.add("show");
-  setTimeout(() => mapInst?.invalidateSize(), 250);
+  setTimeout(() => {
+    mapInst?.invalidateSize();
+    D.addrSec.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 250);
 }
 
 async function doScan() {

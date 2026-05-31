@@ -77,7 +77,8 @@ nav{
 /* ── Address ── */
 .address-section{display:none;max-width:960px;margin:0 auto;padding:0 24px 24px}
 .address-section.show{display:block}
-.address-card{background:#fff;border-radius:20px;box-shadow:0 2px 20px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04);padding:28px 32px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start}
+.address-card{background:#fff;border-radius:20px;box-shadow:0 2px 20px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04);padding:28px 32px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;cursor:pointer;transition:box-shadow 0.2s}
+.address-card:hover{box-shadow:0 4px 28px rgba(0,113,227,0.12)}
 .address-meta{font-size:12px;color:#aeaeb2;letter-spacing:0.5px;margin-bottom:8px}
 .address-ip{font-size:28px;font-weight:700;letter-spacing:-0.03em;color:#1d1d1f;margin-bottom:8px;word-break:break-all}
 .address-detail{font-size:16px;color:#1d1d1f;line-height:1.6}
@@ -88,15 +89,13 @@ nav{
 .address-stats-item .num{font-size:22px;font-weight:700;color:#1d1d1f}
 .address-stats-item .label{font-size:11px;color:#86868b;margin-top:2px}
 
-/* ── Map ── */
-.map-section{display:none;max-width:960px;margin:0 auto;padding:0 24px 24px}
-.map-section.show{display:block}
-.map-wrap{width:100%;height:520px;border-radius:20px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04)}
+/* ── Results Row ── */
+.results-row{display:none;max-width:1280px;margin:0 auto;padding:0 24px 120px}
+.results-row.show{display:flex;gap:20px;align-items:flex-start}
+.results-map{flex:1 1 0;min-width:0}
+.results-grid{flex:0 0 340px}
+.map-wrap{width:100%;height:600px;border-radius:20px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04)}
 #map{width:100%;height:100%;background:#f5f5f7}
-
-/* ── Grid ── */
-.grid-section{display:none;max-width:600px;margin:0 auto;padding:0 24px 120px}
-.grid-section.show{display:block}
 .grid-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
 .grid-header h2{font-size:14px;font-weight:600;color:#86868b}
 .grid-header span{font-size:11px;color:#aeaeb2}
@@ -146,12 +145,16 @@ nav{
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .address-card,.map-wrap,.grid-wrap{animation:fadeUp 0.5s ease-out}
 
+@media(max-width:900px){
+  .results-row.show{flex-direction:column}
+  .results-grid{flex:0 0 auto;width:100%}
+}
 @media(max-width:768px){
   .hero{padding:80px 20px 40px}.hero-title{font-size:clamp(36px,12vw,56px)}
   .scan-card{padding:16px;border-radius:16px}
   .address-card{padding:20px;grid-template-columns:1fr}
   .map-wrap{height:360px}.ip-grid{gap:2px}.ip-cell{font-size:6px;border-radius:2px}
-  .grid-section{padding:0 16px 80px}.modal-card{padding:24px}.modal-ip{font-size:26px}
+  .modal-card{padding:24px}.modal-ip{font-size:26px}
 }
 @media(max-width:480px){
   .input-group{flex-direction:column}.address-ip{font-size:20px}
@@ -231,18 +234,20 @@ nav{
 <!-- ═══ Address ═══ -->
 <section class="address-section" id="addressSection"><div id="addressBody"></div></section>
 
-<!-- ═══ Map ═══ -->
-<section class="map-section" id="mapSection"><div class="map-wrap"><div id="map"></div></div></section>
-
-<!-- ═══ Grid ═══ -->
-<section class="grid-section" id="gridSection">
-  <div class="grid-header"><h2>邻域网格</h2><span id="gridCount">256 个地址</span></div>
-  <div class="grid-legend">
-    <div class="grid-legend-item"><div class="grid-legend-dot empty"></div>无定位数据</div>
-    <div class="grid-legend-item"><div class="grid-legend-dot found"></div>已定位</div>
+<!-- ═══ Results: Map + Grid side by side ═══ -->
+<div class="results-row" id="resultsRow">
+  <div class="results-map">
+    <div class="map-wrap"><div id="map"></div></div>
   </div>
-  <div class="grid-wrap"><div class="ip-grid" id="ipGrid"></div></div>
-</section>
+  <div class="results-grid">
+    <div class="grid-header"><h2>邻域网格</h2><span id="gridCount">256 个地址</span></div>
+    <div class="grid-legend">
+      <div class="grid-legend-item"><div class="grid-legend-dot empty"></div>未定位</div>
+      <div class="grid-legend-item"><div class="grid-legend-dot found"></div>已定位</div>
+    </div>
+    <div class="grid-wrap"><div class="ip-grid" id="ipGrid"></div></div>
+  </div>
+</div>
 
 <footer class="site-footer">
   数据来源 <a href="https://apimobile.meituan.com" target="_blank" rel="noopener">美团定位 API</a>
@@ -285,8 +290,7 @@ const D = {
   gridCount:  $("gridCount"),
   addrSec:    $("addressSection"),
   addrBody:   $("addressBody"),
-  mapSec:     $("mapSection"),
-  gridSec:    $("gridSection"),
+  resultsRow: $("resultsRow"),
   ipGrid:     $("ipGrid"),
   error:      $("errorBanner"),
   errorText:  $("errorText"),
@@ -448,8 +452,7 @@ async function startScan() {
   D.navStatus.textContent = `扫描 ${prefix}.0/24 …`;
   D.navStatus.className = "";
   D.addrSec.classList.remove("show");
-  D.mapSec.classList.remove("show");
-  D.gridSec.classList.add("show");
+  D.resultsRow.classList.add("show");
   resetGrid();
   clearMarkers();
 
@@ -476,15 +479,9 @@ async function startScan() {
   await renderMap();
   const { lastOctet } = S;
   const showIdx = (lastOctet >= 0 && S.results[lastOctet]) ? lastOctet : S.results.findIndex(r => r);
-  if (showIdx >= 0) {
-    await renderAddress(showIdx);
-    const sd = S.results[showIdx];
-    if (sd && sd.lat != null && sd.lng != null) {
-      mapInst.setView([+sd.lat, +sd.lng], 12, { animate: false });
-    }
-  }
+  if (showIdx >= 0) await renderAddress(showIdx);
   D.addrSec.classList.add("show");
-  D.mapSec.classList.add("show");
+  D.resultsRow.classList.add("show");
   setTimeout(() => mapInst?.invalidateSize(), 250);
 }
 
@@ -530,6 +527,7 @@ async function renderAddress(idx) {
   const d = S.results[idx];
   if (!d) return;
 
+  S.currentIdx = idx;
   const ip = S.ips[idx];
   const rg = d.rgeo || {};
 
@@ -557,7 +555,7 @@ async function renderAddress(idx) {
   }
 
   D.addrBody.innerHTML = `
-    <div class="address-card">
+    <div class="address-card" onclick="jumpToCurrentIP()" title="点击定位到地图">
       <div>
         <div class="address-meta">当前位置</div>
         <div class="address-ip">${ip}</div>
@@ -641,6 +639,16 @@ function clearMarkers() {
 // ═════════════════════════════════════════════════════
 //  交互
 // ═════════════════════════════════════════════════════
+/** 点击地址卡片 → 定位到当前 IP */
+function jumpToCurrentIP() {
+  const idx = S.currentIdx;
+  if (idx == null) return;
+  const d = S.results[idx];
+  if (!d || d.lat == null || d.lng == null) return;
+  mapInst?.setView([+d.lat, +d.lng], 14, { animate: true });
+  highlightCell(idx);
+}
+
 async function focusOnIP(i) {
   const d = S.results[i];
   if (!d) return;
@@ -650,7 +658,7 @@ async function focusOnIP(i) {
   await renderAddress(i);
   highlightCell(i);
   D.addrSec.classList.add("show");
-  D.mapSec.classList.add("show");
+  D.resultsRow.classList.add("show");
   D.addrSec.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
